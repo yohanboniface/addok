@@ -9,6 +9,7 @@ from .helpers.index import VALUE_SEPARATOR
 from .helpers.text import ascii
 
 from .db import DB
+from .ds import DS
 
 
 def compute_geohash_key(geoh, with_neighbors=True):
@@ -41,17 +42,10 @@ class Result(object):
         if isinstance(_id, dict):
             doc = _id
         else:
-            doc = DB.hgetall(_id)
+            doc = list(DS.get(_id))[0]
         if not doc:
             raise ValueError('id "{}" not found'.format(_id[2:]))
-        self._doc = {k.decode(): v.decode() for k, v in doc.items()}
-        self.load_housenumbers()
-
-    def load_housenumbers(self):
-        self.housenumbers = {}
-        for key, value in self._doc.items():
-            if key.startswith('h|'):
-                self.housenumbers[key[2:]] = value
+        self._doc = doc
 
     def __getattr__(self, key):
         if key not in self._cache:
@@ -66,7 +60,10 @@ class Result(object):
                 else self._rawattr(config.NAME_FIELD)[0])
 
     def _rawattr(self, key):
-        return self._doc.get(key, '').split(VALUE_SEPARATOR)
+        value = self._doc.get(key, '')
+        if not isinstance(value, (tuple, list)):
+            value = [value]
+        return value
 
     def __repr__(self):
         return '<{} - {} ({})>'.format(str(self), self.id, self.score)
@@ -225,12 +222,9 @@ class Search(BaseHelper):
         self.debug('Computing results')
         ids = [i for i in self.bucket if i not in self.results]
         if ids:
-            pipe = DB.pipeline(transaction=False)
-            for _id in ids:
-                pipe.hgetall(_id)
-            buffer = pipe.execute()
+            docs = DS.get(*ids)
             self.debug('Done getting results data')
-            for _id, doc in zip(ids, buffer):
+            for _id, doc in zip(ids, docs):
                 result = Result(doc)
                 for processor in config.SEARCH_RESULT_PROCESSORS:
                     processor(self, result)

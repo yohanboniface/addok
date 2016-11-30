@@ -66,18 +66,12 @@ def housenumbers_pairs_deindexer(db, key, doc, tokens, **kwargs):
 
 
 def configure(config):
-    target = 'addok.helpers.index.document_indexer'
-    if target in config.INDEXERS:
-        idx = config.INDEXERS.index(target)
-        config.INDEXERS.insert(idx, pairs_indexer)
+    config.INDEXERS.append(pairs_indexer)
+    config.DEINDEXERS.append(pairs_deindexer)
     target = 'addok.helpers.index.housenumbers_indexer'
     if target in config.INDEXERS:
         idx = config.INDEXERS.index(target)
         config.INDEXERS.insert(idx, housenumbers_pairs_indexer)
-    target = 'addok.helpers.index.document_deindexer'
-    if target in config.DEINDEXERS:
-        idx = config.DEINDEXERS.index(target)
-        config.DEINDEXERS.insert(idx, pairs_deindexer)
     target = 'addok.helpers.index.housenumbers_deindexer'
     if target in config.DEINDEXERS:
         idx = config.DEINDEXERS.index(target)

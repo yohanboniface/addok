@@ -117,19 +117,21 @@ class Bar(ProgressBar):
 
 def parallelize(func, iterable, chunk_size=10000, **bar_kwargs):
     bar = Bar(**bar_kwargs)
-    with ProcessPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
-        count = 0
+
+    def chunkize():
         chunk = []
-        for item in iterable:
-            if not item:
-                continue
-            chunk.append(item)
+        count = 0
+        for i in iterable:
             count += 1
+            chunk.append(i)
             if count % chunk_size == 0:
-                for r in executor.map(func, chunk):
-                    bar()
+                yield chunk
                 chunk = []
         if chunk:
-            for r in executor.map(func, chunk):
-                bar()
+            yield chunk
+
+    with ProcessPoolExecutor(max_workers=os.cpu_count() * 2) as executor:
+        bar(step=0)
+        for r in executor.map(func, chunkize()):
+            bar(step=len(r))
         bar.finish()

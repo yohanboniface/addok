@@ -54,8 +54,8 @@ class DummyDoc(dict):
         self.index()
 
     def index(self):
-        from addok.helpers.index import index_document
-        index_document(self)
+        from addok.batch import process_documents
+        process_documents([self.copy()])
 
 
 @pytest.fixture

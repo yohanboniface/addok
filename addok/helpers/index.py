@@ -4,7 +4,7 @@ import redis
 from addok.config import config
 from addok.db import DB
 
-from . import iter_pipe, keys
+from . import iter_pipe, keys, yielder
 
 VALUE_SEPARATOR = '|~|'
 
@@ -63,9 +63,9 @@ def deindex_token(key, token):
     DB.zrem(tkey, key)
 
 
-def index_document(doc, **kwargs):
+def index_document(pipe, doc, **kwargs):
     key = keys.document_key(doc['id'])
-    pipe = DB.pipeline()
+    # pipe = DB.pipeline()
     tokens = {}
     for indexer in config.INDEXERS:
         try:
@@ -73,21 +73,21 @@ def index_document(doc, **kwargs):
         except ValueError as e:
             print(e)
             return  # Do not index.
-    try:
-        pipe.execute()
-    except redis.RedisError as e:
-        msg = 'Error while importing document:\n{}\n{}'.format(doc, str(e))
-        raise ValueError(msg)
+    # try:
+    #     pipe.execute()
+    # except redis.RedisError as e:
+    #     msg = 'Error while importing document:\n{}\n{}'.format(doc, str(e))
+    #     raise ValueError(msg)
 
 
-def deindex_document(id_, **kwargs):
+def deindex_document(db, id_, **kwargs):
     key = keys.document_key(id_)
-    doc = DB.hgetall(key)
+    doc = db.hgetall(key)
     if not doc:
         return
     tokens = []
     for indexer in config.DEINDEXERS:
-        indexer(DB, key, doc, tokens, **kwargs)
+        indexer(db, key, doc, tokens, **kwargs)
 
 
 def index_geohash(pipe, key, lat, lon):
@@ -121,10 +121,7 @@ def fields_indexer(pipe, key, doc, tokens, **kwargs):
             if callable(boost):
                 boost = boost(doc)
             boost = boost + importance
-            if isinstance(values, (list, tuple)):
-                # We can't save a list as redis hash value.
-                doc[name] = VALUE_SEPARATOR.join(values)
-            else:
+            if not isinstance(values, (list, tuple)):
                 values = [values]
             for value in values:
                 extract_tokens(tokens, str(value), boost=boost)
@@ -142,31 +139,20 @@ def fields_deindexer(db, key, doc, tokens, **kwargs):
                 tokens.extend(deindex_field(key, value))
 
 
-def document_indexer(pipe, key, doc, tokens, **kwargs):
+def geohash_indexer(pipe, key, doc, tokens, **kwargs):
     index_geohash(pipe, key, doc['lat'], doc['lon'])
-    pipe.hmset(key, doc)
 
 
-def document_deindexer(db, key, doc, tokens, **kwargs):
-    db.delete(key)
+def geohash_deindexer(db, key, doc, tokens, **kwargs):
     deindex_geohash(key, doc[b'lat'], doc[b'lon'])
 
 
 def housenumbers_indexer(pipe, key, doc, tokens, **kwargs):
-    housenumbers = doc.get(config.HOUSENUMBERS_FIELD)
-    if not housenumbers:
-        return
-    del doc['housenumbers']
+    housenumbers = doc.get('housenumbers', {})
     to_index = {}
-    for number, point in housenumbers.items():
-        vals = [number, point['lat'], point['lon']]
-        for field in config.HOUSENUMBERS_PAYLOAD_FIELDS:
-            vals.append(point.get(field, ''))
-        val = '|'.join(map(str, vals))
-        for hn in preprocess_housenumber(number.replace(' ', '')):
-            doc[keys.housenumber_field_key(hn)] = val
-            to_index[hn] = config.DEFAULT_BOOST
-        index_geohash(pipe, key, point['lat'], point['lon'])
+    for token, data in housenumbers.items():
+        to_index[token] = config.DEFAULT_BOOST
+        index_geohash(pipe, key, data['lat'], data['lon'])
     index_tokens(pipe, to_index, key, **kwargs)
 
 
@@ -203,3 +189,17 @@ def filters_deindexer(db, key, doc, tokens, **kwargs):
             db.srem(keys.filter_key(name, value.decode()), key)
     if "type" in config.FILTERS:
         db.srem(keys.filter_key("type", "housenumber"), key)
+
+
+@yielder
+def prepare_housenumbers(doc):
+    # We need to have the housenumbers tokenized in the document, to match
+    # from user query (see results.match_housenumber).
+    housenumbers = doc.get(config.HOUSENUMBERS_FIELD)
+    if housenumbers:
+        doc['housenumbers'] = {}
+        for number, data in housenumbers.items():
+            for hn in preprocess_housenumber(number.replace(' ', '')):
+                data['raw'] = number
+                doc['housenumbers'][str(hn)] = data.copy()
+    return doc

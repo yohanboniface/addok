@@ -46,6 +46,10 @@ HOUSENUMBER_PROCESSORS = []
 BATCH_PROCESSORS = [
     'addok.batch.to_json',
 ]
+DOCUMENT_PROCESSORS = [
+    'addok.helpers.index.prepare_housenumbers',
+    'addok.ds.store_documents',
+]
 RESULTS_COLLECTORS = [
     'addok.helpers.collectors.only_commons',
     'addok.helpers.collectors.bucket_with_meaningful',
@@ -73,14 +77,15 @@ INDEXERS = [
     'addok.helpers.index.fields_indexer',
     'addok.helpers.index.filters_indexer',
     'addok.helpers.index.housenumbers_indexer',
-    'addok.helpers.index.document_indexer',
+    'addok.helpers.index.geohash_indexer',
 ]
 DEINDEXERS = [
     'addok.helpers.index.fields_deindexer',
     'addok.helpers.index.filters_deindexer',
     'addok.helpers.index.housenumbers_deindexer',
-    'addok.helpers.index.document_deindexer',
+    'addok.helpers.index.geohash_deindexer',
 ]
+DOCUMENT_STORAGE = 'addok.ds.DocumentStorage'
 
 # Fields to be indexed
 # If you want a housenumbers field but need to name it differently, just add
@@ -125,3 +130,5 @@ LOG_QUERIES = False
 LOG_NOT_FOUND = False
 
 INDEX_EDGE_NGRAMS = True
+
+STORAGE_IMPORT_CHUNK_SIZE = 1000

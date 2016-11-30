@@ -1,7 +1,14 @@
 from addok.autocomplete import create_edge_ngrams, index_edge_ngrams
-from addok.config import config
-from addok.helpers.index import deindex_document, index_document
+from addok.batch import process_documents
 from addok.db import DB
+
+
+def index_document(doc):
+    process_documents([doc])
+
+
+def deindex_document(id_):
+    process_documents([{'id': id_, '_action': 'delete'}])
 
 
 def count_keys():
@@ -41,7 +48,7 @@ DOC = {
 def test_index_document():
     index_document(DOC.copy())
     assert DB.exists('d|xxxx')
-    assert DB.type('d|xxxx') == b'hash'
+    assert DB.type('d|xxxx') == b'string'
     assert DB.exists('w|rue')
     assert b'd|xxxx' in DB.zrange('w|rue', 0, -1)
     assert DB.exists('w|des')

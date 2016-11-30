@@ -1,9 +1,10 @@
+from datetime import timedelta
 import json
 import os.path
 import sys
 
 from addok.config import config
-from addok.helpers import iter_pipe, parallelize, yielder
+from addok.helpers import iter_pipe, parallelize, yielder, Bar
 from addok.helpers.index import deindex_document, index_document
 
 
@@ -55,13 +56,18 @@ def to_json(row):
         return None
 
 
-def process(doc):
-    if doc.get('_action') in ['delete', 'update']:
-        deindex_document(doc['id'])
-    if doc.get('_action') in ['index', 'update', None]:
-        index_document(doc)
+def process_documents(docs):
+    from addok.db import DB
+    pipe = DB.pipeline(transaction=False)
+    for doc in iter_pipe(docs, config.DOCUMENT_PROCESSORS):
+        if doc.get('_action') in ['delete', 'update']:
+            deindex_document(DB, doc['id'])
+        if doc.get('_action') in ['index', 'update', None]:
+            index_document(pipe, doc)
+    pipe.execute()
+    return docs
 
 
 def batch(iterable):
-    parallelize(process, iterable, prefix='Importing…', chunk_size=20000,
-                throttle=500)
+    parallelize(process_documents, iterable, chunk_size=1000,
+                prefix='Importing…', throttle=timedelta(seconds=1))

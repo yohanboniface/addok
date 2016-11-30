@@ -22,3 +22,4 @@ dist/
 scripts/*
 htmlcov/*
 prof/
+*.db

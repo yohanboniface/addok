@@ -13,6 +13,7 @@ class DBRedis:
     def __getattr__(self, name):
         return getattr(self.instance, name)
 
+
 DB = DBRedis()
 
 

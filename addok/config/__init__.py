@@ -19,7 +19,7 @@ class Config(dict):
             'SEARCH_RESULT_PROCESSORS', 'REVERSE_RESULT_PROCESSORS',
             'PROCESSORS', 'INDEXERS', 'DEINDEXERS', 'BATCH_PROCESSORS',
             'SEARCH_PREPROCESSORS', 'RESULTS_FORMATTERS',
-            'HOUSENUMBER_PROCESSORS',
+            'HOUSENUMBER_PROCESSORS', 'DOCUMENT_PROCESSORS',
         ]
         self.plugins = [
             'addok.shell',
