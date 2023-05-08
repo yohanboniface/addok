@@ -5,5 +5,5 @@ editdistance==0.6.2
 ngram==4.0.3
 progressist==0.1.0
 python-geohash==0.8.5
-redis==4.5.4
+redis==4.5.5
 Unidecode==1.3.6
