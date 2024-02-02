@@ -11,6 +11,7 @@ REDIS = {
     "documents": {
         "db": os.environ.get("REDIS_DB_DOCUMENTS") or 1,
     },
+    "ssl": os.environ.get("REDIS_SSL") == 'True',
 }
 
 # Min/max number of results to be retrieved from db and scored.

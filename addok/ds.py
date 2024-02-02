@@ -52,6 +52,7 @@ def on_load():
             db=params.get("db"),
             password=params.get("password"),
             unix_socket_path=params.get("unix_socket_path"),
+            ssl=params.get("ssl"), # default : False,
         )
 
 

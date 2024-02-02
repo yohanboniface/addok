@@ -38,17 +38,20 @@ installed on.
 #### REDIS (dict)
 Defines the Redis database settings:
 
+```
     REDIS = {
         'host': 'localhost',
         'port': 6379,
         'db': 0
     }
+```    
 
 By default, when using the `RedisStore` for documents, indexes and documents
 will be stored in two different Redis databases.
 You can control those details by using `indexes` and/or `documents`
 subdictionnaries, for example:
 
+```
     REDIS = {
         'host': 'myhost',
         'port': 6379,
@@ -59,9 +62,11 @@ subdictionnaries, for example:
             'db': 12,
         }
     }
+```
 
 If your hosts are different, you can define them like this:
 
+```
     REDIS = {
         'port': 6379,
         'indexes': {
@@ -73,10 +78,53 @@ If your hosts are different, you can define them like this:
             'host': 'myhost2',
         }
     }
+```
+
 
 And of course, same for the port.
 
 To use Redis through a Unix socket, use `unix_socket_path` key.
+
+To use external redis with ssl connection you can add the 'ssl' parameters :
+
+```
+    REDIS = {
+        'host': 'myhost',
+        'port': 6379,
+        'ssl' : True,
+        'indexes': {
+            'db': 11,
+        },
+        'documents': {
+            'db': 12,
+        }
+    }
+```
+
+If you want to use environement variables instead. Remove entry 'REDIS' in configuration file and use ENVIRONEMENTS variables :
+
+
+| Variable           | require | Default  | Descripion             | example       |
+|--------------------|---------|----------|------------------------|---------------|
+| REDIS_HOST         | true    | locahost | Redis host             |               |
+| REDIS_PORT         | true    | 6379     | Redis port             |               |
+| REDIS_SOCKET       | false   |          |                        |               |
+| REDIS_DB_INDEXES   | true    | 0        |                        |               |
+| REDIS_DB_DOCUMENTS | true    | 1        |                        |               |
+| REDIS_SSL          | false   |          |  Acive SSL             | True          |
+
+
+
+    "host": os.environ.get("REDIS_HOST") or "localhost",
+    "port": os.environ.get("REDIS_PORT") or 6379,
+    "unix_socket_path": os.environ.get("REDIS_SOCKET"),
+    "indexes": {
+        "db": os.environ.get("REDIS_DB_INDEXES") or 0,
+    },
+    "documents": {
+        "db": os.environ.get("REDIS_DB_DOCUMENTS") or 1,
+    },
+    "ssl": os.environ.get("REDIS_SSL") == 'True',
 
 
 #### LOG_DIR (path)
