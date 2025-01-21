@@ -3,5 +3,5 @@ pytest-cov==4.0.0
 pytest-falcon==0.4.2
 fabric==2.1.3
 mkdocs==1.4.2
-twine==4.0.2
+twine==6.1.0
 wheel==0.41.1
